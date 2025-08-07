@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-const API_URL = "http://localhost:4000"; // Change to your server's IP if needed
+const API_URL = "http://localhost:4000"; // Change to your deployed API URL if needed
 
 const questions = [
   {
@@ -65,7 +65,7 @@ export default function TestcasesPage() {
     });
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       alert("Please enter your name.");
@@ -76,10 +76,12 @@ export default function TestcasesPage() {
     let correct = 0;
     questions.forEach((q, qIdx) => {
       total += q.options.filter((o) => o.correct).length;
-     correct += q.options.reduce(
-  (sum, o, oIdx) => sum + (o.correct && (answers[qIdx] || []).includes(oIdx) ? 1 : 0),
-  0
-);
+      correct += q.options.reduce(
+        (sum: number, o, oIdx) =>
+          sum + (o.correct && (answers[qIdx] || []).includes(oIdx) ? 1 : 0),
+        0
+      );
+    });
     const percent = Math.round((correct / total) * 100);
     setScore(percent);
 
