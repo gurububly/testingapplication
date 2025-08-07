@@ -185,7 +185,7 @@ export default function TestcasesPage() {
         if (!opt.correct && (answers[qIdx] || []).includes(oIdx)) correct -= 0.5;
       });
     });
-    correct = Math.max(0, correct); // Ensure no negative score
+    correct = Math.max(0, correct);
     const percent = Math.round((correct / total) * 100);
     setScore(percent);
 
@@ -295,18 +295,32 @@ export default function TestcasesPage() {
           {nameExists && <div className="text-red-600 mb-2">This name has already submitted responses.</div>}
 
           {questions.map((q, qIdx) => (
-            <div key={qIdx} className="mb-4">
-              <h3 className="font-semibold">{qIdx + 1}. {q.question}</h3>
-              {q.options.map((opt, oIdx) => (
-                <label key={oIdx} className={`block ${renderOptionFeedback(qIdx, oIdx, opt)}`}>
-                  <input
-                    type="checkbox"
-                    checked={(answers[qIdx] || []).includes(oIdx)}
-                    onChange={() => handleOptionChange(qIdx, oIdx)}
-                    disabled={submitted}
-                  /> {opt.text}
-                </label>
-              ))}
+            <div key={qIdx} className="mb-6 border-t pt-4">
+              <h3 className="font-semibold mb-2">{qIdx + 1}. {q.question}</h3>
+              <ul className="ml-4">
+                {q.options.map((opt, oIdx) => {
+                  const isSelected = (answers[qIdx] || []).includes(oIdx);
+                  const className = renderOptionFeedback(qIdx, oIdx, opt);
+                  return (
+                    <li key={oIdx} className={`mb-1 ${className}`}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleOptionChange(qIdx, oIdx)}
+                        disabled={submitted}
+                        className="mr-2"
+                      />
+                      {opt.text}
+                      {submitted && opt.correct && (
+                        <span className="ml-2 text-green-500 font-semibold">(Correct)</span>
+                      )}
+                      {submitted && isSelected && !opt.correct && (
+                        <span className="ml-2 text-red-400">(Your wrong choice)</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           ))}
 
