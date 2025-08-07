@@ -76,10 +76,10 @@ export default function TestcasesPage() {
     let correct = 0;
     questions.forEach((q, qIdx) => {
       total += q.options.filter((o) => o.correct).length;
-      correct += q.options
-        .map((o, oIdx) => (o.correct && (answers[qIdx] || []).includes(oIdx) ? 1 : 0))
-        .reduce((a, b) => a + b, 0);
-    });
+     correct += q.options.reduce(
+  (sum, o, oIdx) => sum + (o.correct && (answers[qIdx] || []).includes(oIdx) ? 1 : 0),
+  0
+);
     const percent = Math.round((correct / total) * 100);
     setScore(percent);
 
