@@ -249,31 +249,6 @@ export default function TestcasesPage() {
     return "";
   };
 
-  if (showHost && hostAuth) {
-    return (
-      <div className="max-w-2xl mx-auto p-6">
-        <button className="mb-4 bg-gray-300 px-3 py-1 rounded" onClick={() => { setShowHost(false); setHostAuth(false); }}>Back to Quiz</button>
-        <button className="mb-4 ml-2 bg-blue-600 text-white px-3 py-1 rounded" onClick={fetchResults} disabled={loading}>{loading ? "Refreshing..." : "Refresh Results"}</button>
-        <button className="mb-4 ml-2 bg-red-600 text-white px-3 py-1 rounded" onClick={handleClearResults}>Clear Results</button>
-        <h2 className="text-xl font-bold mb-2">All Submissions</h2>
-        <table className="w-full border mb-4">
-          <thead><tr><th className="border px-2">Name</th><th className="border px-2">Score (%)</th></tr></thead>
-          <tbody>
-            {allResults.sort((a, b) => b.percent - a.percent).map((s, i) => (
-              <tr key={i}><td className="border px-2">{s.name}</td><td className="border px-2 font-bold">{s.percent}</td></tr>
-            ))}
-          </tbody>
-        </table>
-        <h3 className="text-lg font-semibold mb-1">🏆 Top 3 Winners</h3>
-        <ol className="list-decimal ml-6">
-          {allResults.sort((a, b) => b.percent - a.percent).slice(0, 3).map((s, i) => (
-            <li key={i} className="font-bold">{s.name} ({s.percent}%)</li>
-          ))}
-        </ol>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto p-6">
       <div className="flex justify-between mb-4">
@@ -306,8 +281,7 @@ export default function TestcasesPage() {
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => handleOptionChange(qIdx, oIdx)}
-                        disabled={submitted}
+                        readOnly
                         className="mr-2"
                       />
                       {opt.text}
@@ -334,7 +308,6 @@ export default function TestcasesPage() {
         </div>
       )}
 
-      {/* Legend Section */}
       {submitted && (
         <div className="mt-6 text-sm border-t pt-4">
           <h4 className="font-semibold mb-2">Legend:</h4>
@@ -349,3 +322,4 @@ export default function TestcasesPage() {
     </div>
   );
 }
+
