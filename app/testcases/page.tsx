@@ -130,6 +130,17 @@ export default function TestcasesPage() {
     }
   };
 
+  const handleClearResults = async () => {
+    if (window.confirm("Are you sure you want to clear all results?")) {
+      try {
+        await fetch(`${API_URL}/clear`, { method: "POST" });
+        fetchResults();
+      } catch (err) {
+        alert("Failed to clear results.");
+      }
+    }
+  };
+
   if (showHost && hostAuth) {
     return (
       <div className="max-w-2xl mx-auto p-6">
@@ -148,6 +159,12 @@ export default function TestcasesPage() {
           disabled={loading}
         >
           {loading ? "Refreshing..." : "Refresh Results"}
+        </button>
+        <button
+          className="mb-4 ml-2 bg-red-600 text-white px-3 py-1 rounded"
+          onClick={handleClearResults}
+        >
+          Clear Results
         </button>
         <h2 className="text-xl font-bold mb-2">All Submissions</h2>
         <table className="w-full border mb-4">
@@ -234,7 +251,7 @@ export default function TestcasesPage() {
             Submit Another
           </button>
         </div>
-            )}
-          </div>
-        );
-      }
+      )}
+    </div>
+  );
+}
