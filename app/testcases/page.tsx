@@ -161,6 +161,7 @@ export default function TestcasesPage() {
   );
 
   const handleOptionChange = (qIdx: number, oIdx: number) => {
+    if (submitted) return;
     setAnswers((prev) => {
       const prevArr = prev[qIdx] || [];
       return {
@@ -197,7 +198,7 @@ export default function TestcasesPage() {
       });
       setSubmitted(true);
       fetchResults();
-    } catch (err) {
+    } catch {
       alert("Failed to submit. Please check your network/API connection.");
     }
   };
@@ -218,33 +219,12 @@ export default function TestcasesPage() {
     fetchResults();
   }, [showHost, hostAuth]);
 
-  const handleHostView = () => {
-    const pwd = prompt("Enter host password to view results:");
-    if (pwd === HOST_PASSWORD) {
-      setHostAuth(true);
-      setShowHost(true);
-    } else {
-      alert("Incorrect password!");
-    }
-  };
-
-  const handleClearResults = async () => {
-    if (window.confirm("Are you sure you want to clear all results?")) {
-      try {
-        await fetch(`${API_URL}/clear`, { method: "POST" });
-        fetchResults();
-      } catch {
-        alert("Failed to clear results.");
-      }
-    }
-  };
-
-  const renderOptionFeedback = (qIdx: number, oIdx: number, option: { text: string; correct: boolean }) => {
+  const renderOptionFeedback = (qIdx: number, oIdx: number, opt: any): string => {
     const selected = (answers[qIdx] || []).includes(oIdx);
     if (submitted) {
-      if (option.correct && selected) return "text-green-700 font-bold";
-      if (option.correct && !selected) return "text-green-600";
-      if (!option.correct && selected) return "text-red-500 line-through";
+      if (opt.correct && selected) return "text-green-700 font-bold";
+      if (opt.correct && !selected) return "text-green-600";
+      if (!opt.correct && selected) return "text-red-500 line-through";
     }
     return "";
   };
@@ -253,7 +233,15 @@ export default function TestcasesPage() {
     <div className="max-w-2xl mx-auto p-6">
       <div className="flex justify-between mb-4">
         <h1 className="text-2xl font-bold">Login Page Test Case MCQs</h1>
-        <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={handleHostView}>Host View</button>
+        <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={() => {
+          const pwd = prompt("Enter host password to view results:");
+          if (pwd === HOST_PASSWORD) {
+            setHostAuth(true);
+            setShowHost(true);
+          } else {
+            alert("Incorrect password!");
+          }
+        }}>Host View</button>
       </div>
 
       {!submitted ? (
@@ -265,7 +253,6 @@ export default function TestcasesPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            disabled={submitted}
           />
           {nameExists && <div className="text-red-600 mb-2">This name has already submitted responses.</div>}
 
@@ -273,27 +260,26 @@ export default function TestcasesPage() {
             <div key={qIdx} className="mb-6 border-t pt-4">
               <h3 className="font-semibold mb-2">{qIdx + 1}. {q.question}</h3>
               <ul className="ml-4">
-                {q.options.map((opt, oIdx) => {
-                  const isSelected = (answers[qIdx] || []).includes(oIdx);
-                  const className = renderOptionFeedback(qIdx, oIdx, opt);
-                  return (
-                    <li key={oIdx} className={`mb-1 ${className}`}>
+                {q.options.map((opt, oIdx) => (
+                  <li key={oIdx} className={`mb-1 ${renderOptionFeedback(qIdx, oIdx, opt)}`}>
+                    <label>
                       <input
                         type="checkbox"
-                        checked={isSelected}
-                        readOnly
                         className="mr-2"
+                        checked={(answers[qIdx] || []).includes(oIdx)}
+                        onChange={() => handleOptionChange(qIdx, oIdx)}
+                        disabled={submitted}
                       />
                       {opt.text}
                       {submitted && opt.correct && (
                         <span className="ml-2 text-green-500 font-semibold">(Correct)</span>
                       )}
-                      {submitted && isSelected && !opt.correct && (
+                      {submitted && !opt.correct && (answers[qIdx] || []).includes(oIdx) && (
                         <span className="ml-2 text-red-400">(Your wrong choice)</span>
                       )}
-                    </li>
-                  );
-                })}
+                    </label>
+                  </li>
+                ))}
               </ul>
             </div>
           ))}
@@ -322,4 +308,3 @@ export default function TestcasesPage() {
     </div>
   );
 }
-
