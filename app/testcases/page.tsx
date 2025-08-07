@@ -1,48 +1,144 @@
 "use client";
 import { useState, useEffect } from "react";
 
-const API_URL = "https://qa-testcase-api.onrender.com"; // Change to your deployed API URL if needed
+const API_URL = "https://qa-testcase-api.onrender.com";
 const HOST_PASSWORD = "testing123"; // Change this to your secret
 
+// MCQ questions and answers (true = correct)
 const questions = [
   {
-    category: "Positive",
-    question: "Which are valid positive login test cases?",
+    question: "Which of the following are positive test cases for login functionality?",
     options: [
-      { text: "Login with valid username and password", correct: true },
-      { text: "Login with blank password", correct: false },
-      { text: "Login with valid email and password", correct: true },
-      { text: "Login with SQL injection", correct: false },
+      { text: "Enter valid username and valid password", correct: true },
+      { text: "Login with remember me checkbox checked", correct: true },
+      { text: "Enter invalid username and valid password", correct: false },
+      { text: "Leave both username and password empty", correct: false },
     ],
   },
   {
-    category: "Negative",
-    question: "Which are valid negative login test cases?",
+    question: "What are valid negative test cases for login?",
     options: [
-      { text: "Login with invalid password", correct: true },
-      { text: "Login with blank username", correct: true },
-      { text: "Login with valid credentials", correct: false },
-      { text: "Login with expired account", correct: true },
+      { text: "Invalid username and invalid password", correct: true },
+      { text: "Valid username and empty password", correct: true },
+      { text: "SQL injection input", correct: true },
+      { text: "Valid credentials with correct captcha", correct: false },
     ],
   },
   {
-    category: "Edge",
-    question: "Which are valid edge login test cases?",
+    question: "Which of the following would be considered edge test cases?",
     options: [
-      { text: "Login with max length username", correct: true },
-      { text: "Login with special characters", correct: true },
-      { text: "Login with empty password", correct: false },
-      { text: "Login with whitespace only", correct: true },
+      { text: "Username with exactly 255 characters", correct: true },
+      { text: "Password with special characters", correct: true },
+      { text: "Login with username as \"admin\" and password \"admin\"", correct: false },
+      { text: "Typo in username", correct: false },
     ],
   },
   {
-    category: "Performance",
-    question: "Which are valid performance login test cases?",
+    question: "Which performance-related scenarios should be tested for login?",
     options: [
-      { text: "Login under heavy load", correct: true },
-      { text: "Login with slow network", correct: true },
-      { text: "Login with valid credentials", correct: false },
-      { text: "Login after session timeout", correct: true },
+      { text: "Login under slow internet conditions", correct: true },
+      { text: "Multiple concurrent login requests", correct: true },
+      { text: "Login API response time < 1 sec", correct: true },
+      { text: "Login with outdated browser", correct: false },
+    ],
+  },
+  {
+    question: "What should be the expected behavior when both fields are blank and user clicks on login?",
+    options: [
+      { text: "Show error messages for both fields", correct: true },
+      { text: "Redirect to dashboard", correct: false },
+      { text: "Show browser crash", correct: false },
+      { text: "Show loading spinner", correct: false },
+    ],
+  },
+  {
+    question: "Which of the following inputs should be rejected during login?",
+    options: [
+      { text: "Username: ' OR 1=1 --", correct: true },
+      { text: "Password: <script>alert(1)</script>", correct: true },
+      { text: "Username: john.doe@example.com", correct: false },
+      { text: "Password: Welcome@123", correct: false },
+    ],
+  },
+  {
+    question: "What validations are usually applied on the password field?",
+    options: [
+      { text: "Minimum length (e.g., 8 characters)", correct: true },
+      { text: "Includes at least one uppercase, number, and special character", correct: true },
+      { text: "No common words like 'password'", correct: false },
+      { text: "Accepts only numeric passwords", correct: false },
+    ],
+  },
+  {
+    question: "Which test cases cover security aspects of login page?",
+    options: [
+      { text: "Prevent brute-force login attempts", correct: true },
+      { text: "Password should not be visible on screen", correct: true },
+      { text: "Use HTTPS for login API", correct: true },
+      { text: "Allow login from any origin", correct: false },
+    ],
+  },
+  {
+    question: "Which test cases are useful for UI validation on login page?",
+    options: [
+      { text: "Password field should have masked input", correct: true },
+      { text: "Login button should be disabled if fields are empty", correct: true },
+      { text: "Login should succeed even if UI is broken", correct: false },
+      { text: "Proper spacing and alignment of fields", correct: true },
+    ],
+  },
+  {
+    question: "What test cases are useful for session management post-login?",
+    options: [
+      { text: "Session timeout after inactivity", correct: true },
+      { text: "Logout should clear session cookies", correct: true },
+      { text: "Login should keep session active forever", correct: false },
+      { text: "Concurrent logins from multiple devices", correct: true },
+    ],
+  },
+  {
+    question: "Which of these are important accessibility tests for login page?",
+    options: [
+      { text: "Tab key should navigate to each input field", correct: true },
+      { text: "Screen reader should announce input labels", correct: true },
+      { text: "Password should be shown in plain text for accessibility", correct: false },
+      { text: "Color contrast should meet accessibility standards", correct: true },
+    ],
+  },
+  {
+    question: "Which of the following are boundary value test cases for username field?",
+    options: [
+      { text: "0 characters", correct: true },
+      { text: "1 character", correct: true },
+      { text: "Maximum allowed characters (e.g., 255)", correct: true },
+      { text: "Random special characters", correct: false },
+    ],
+  },
+  {
+    question: "What scenarios test auto-lock or account blocking functionality?",
+    options: [
+      { text: "5 consecutive failed login attempts", correct: true },
+      { text: "Brute force using multiple password combinations", correct: true },
+      { text: "Successful login with valid credentials", correct: false },
+      { text: "CAPTCHA appearing after 3 invalid attempts", correct: false },
+    ],
+  },
+  {
+    question: "Which of these are compatibility test cases?",
+    options: [
+      { text: "Login using Chrome, Firefox, Edge", correct: true },
+      { text: "Login via mobile and tablet browsers", correct: true },
+      { text: "Login on dark mode UI", correct: true },
+      { text: "Login with expired session", correct: false },
+    ],
+  },
+  {
+    question: "What are some real-time test scenarios for “Remember Me” functionality?",
+    options: [
+      { text: "Check if user stays logged in after browser restart", correct: true },
+      { text: "Ensure checkbox is unchecked by default", correct: true },
+      { text: "Ensure token is cleared after manual logout", correct: true },
+      { text: "Login with wrong credentials and checkbox checked", correct: false },
     ],
   },
 ];
@@ -56,6 +152,11 @@ export default function TestcasesPage() {
   const [hostAuth, setHostAuth] = useState(false);
   const [allResults, setAllResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Prevent duplicate names
+  const nameExists = allResults.some(
+    (entry) => entry.name.trim().toLowerCase() === name.trim().toLowerCase()
+  );
 
   const handleOptionChange = (qIdx: number, oIdx: number) => {
     setAnswers((prev) => {
@@ -74,18 +175,21 @@ export default function TestcasesPage() {
       alert("Please enter your name.");
       return;
     }
+    if (nameExists) {
+      alert("This name has already submitted responses.");
+      return;
+    }
     // Calculate score
     let total = 0;
     let correct = 0;
     questions.forEach((q, qIdx) => {
-      total += q.options.filter((o) => o.correct).length;
-      correct += q.options.reduce(
-        (sum: number, o, oIdx) =>
-          sum + (o.correct && (answers[qIdx] || []).includes(oIdx) ? 1 : 0),
-        0
-      );
+      q.options.forEach((opt, oIdx) => {
+        total++;
+        if (opt.correct && (answers[qIdx] || []).includes(oIdx)) correct++;
+        if (!opt.correct && (answers[qIdx] || []).includes(oIdx)) correct -= 0.5; // Penalty for wrong selection
+      });
     });
-    const percent = Math.round((correct / total) * 100);
+    const percent = Math.max(0, Math.round((correct / total) * 100));
     setScore(percent);
 
     try {
@@ -95,6 +199,7 @@ export default function TestcasesPage() {
         body: JSON.stringify({ name, answers, percent }),
       });
       setSubmitted(true);
+      fetchResults();
     } catch (err) {
       alert("Failed to submit. Please check your network/API connection.");
     }
@@ -117,6 +222,8 @@ export default function TestcasesPage() {
     if (showHost && hostAuth) {
       fetchResults();
     }
+    // Also fetch on mount for duplicate name check
+    fetchResults();
     // eslint-disable-next-line
   }, [showHost, hostAuth]);
 
@@ -201,9 +308,9 @@ export default function TestcasesPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto p-6">
+    <div className="max-w-2xl mx-auto p-6">
       <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">Login Page Testcase Quiz</h1>
+        <h1 className="text-2xl font-bold">Login Page Test Case MCQs</h1>
         <button
           className="bg-green-600 text-white px-3 py-1 rounded"
           onClick={handleHostView}
@@ -220,23 +327,34 @@ export default function TestcasesPage() {
             value={name}
             onChange={e => setName(e.target.value)}
             required
+            disabled={submitted}
           />
+          {nameExists && (
+            <div className="text-red-600 mb-2">
+              This name has already submitted responses.
+            </div>
+          )}
           {questions.map((q, qIdx) => (
             <div key={qIdx} className="mb-4">
-              <h3 className="font-semibold">{q.category}: {q.question}</h3>
+              <h3 className="font-semibold">{qIdx + 1}. {q.question}</h3>
               {q.options.map((opt, oIdx) => (
                 <label key={oIdx} className="block">
                   <input
                     type="checkbox"
                     checked={(answers[qIdx] || []).includes(oIdx)}
                     onChange={() => handleOptionChange(qIdx, oIdx)}
+                    disabled={submitted}
                   />{" "}
                   {opt.text}
                 </label>
               ))}
             </div>
           ))}
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded mt-2">
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded mt-2"
+            disabled={nameExists}
+          >
             Submit
           </button>
         </form>
