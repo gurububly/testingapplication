@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-const API_URL = "http://localhost:4000"; // Change to your deployed API URL if needed
+const API_URL = "https://qa-testcase-api.onrender.com"; // Change to your deployed API URL if needed
 
 const questions = [
   {
