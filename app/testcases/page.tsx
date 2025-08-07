@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const API_URL = "https://qa-testcase-api.onrender.com"; // Change to your deployed API URL if needed
+const HOST_PASSWORD = "testing123"; // Change this to your secret
 
 const questions = [
   {
@@ -52,7 +53,9 @@ export default function TestcasesPage() {
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [showHost, setShowHost] = useState(false);
+  const [hostAuth, setHostAuth] = useState(false);
   const [allResults, setAllResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const handleOptionChange = (qIdx: number, oIdx: number) => {
     setAnswers((prev) => {
@@ -85,36 +88,66 @@ export default function TestcasesPage() {
     const percent = Math.round((correct / total) * 100);
     setScore(percent);
 
-    // Submit to API
-    await fetch(`${API_URL}/submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, answers, percent }),
-    });
-
-    setSubmitted(true);
+    try {
+      await fetch(`${API_URL}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, answers, percent }),
+      });
+      setSubmitted(true);
+    } catch (err) {
+      alert("Failed to submit. Please check your network/API connection.");
+    }
   };
 
   const fetchResults = async () => {
-    const res = await fetch(`${API_URL}/results`);
-    const data = await res.json();
-    setAllResults(data);
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/results`);
+      const data = await res.json();
+      setAllResults(data);
+    } catch (err) {
+      alert("Failed to fetch results.");
+    }
+    setLoading(false);
   };
 
-  if (showHost) {
+  // Fetch results automatically when entering Host View
+  useEffect(() => {
+    if (showHost && hostAuth) {
+      fetchResults();
+    }
+    // eslint-disable-next-line
+  }, [showHost, hostAuth]);
+
+  const handleHostView = () => {
+    const pwd = prompt("Enter host password to view results:");
+    if (pwd === HOST_PASSWORD) {
+      setHostAuth(true);
+      setShowHost(true);
+    } else {
+      alert("Incorrect password!");
+    }
+  };
+
+  if (showHost && hostAuth) {
     return (
       <div className="max-w-2xl mx-auto p-6">
         <button
           className="mb-4 bg-gray-300 px-3 py-1 rounded"
-          onClick={() => setShowHost(false)}
+          onClick={() => {
+            setShowHost(false);
+            setHostAuth(false);
+          }}
         >
           Back to Quiz
         </button>
         <button
           className="mb-4 ml-2 bg-blue-600 text-white px-3 py-1 rounded"
           onClick={fetchResults}
+          disabled={loading}
         >
-          Refresh Results
+          {loading ? "Refreshing..." : "Refresh Results"}
         </button>
         <h2 className="text-xl font-bold mb-2">All Submissions</h2>
         <table className="w-full border mb-4">
@@ -156,10 +189,7 @@ export default function TestcasesPage() {
         <h1 className="text-2xl font-bold">Login Page Testcase Quiz</h1>
         <button
           className="bg-green-600 text-white px-3 py-1 rounded"
-          onClick={() => {
-            setShowHost(true);
-            fetchResults();
-          }}
+          onClick={handleHostView}
         >
           Host View
         </button>
@@ -204,7 +234,7 @@ export default function TestcasesPage() {
             Submit Another
           </button>
         </div>
-      )}
-    </div>
-  );
-}
+            )}
+          </div>
+        );
+      }
