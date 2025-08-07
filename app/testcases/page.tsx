@@ -143,9 +143,12 @@ const questions = [
   },
 ];
 
+// Define type for answers mapping
+type AnswerMap = { [key: number]: number[] };
+
 export default function TestcasesPage() {
   const [name, setName] = useState("");
-  const [answers, setAnswers] = useState<{ [key: number]: number[] }>({});
+  const [answers, setAnswers] = useState<AnswerMap>({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [showHost, setShowHost] = useState(false);
@@ -153,7 +156,6 @@ export default function TestcasesPage() {
   const [allResults, setAllResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Prevent duplicate names
   const nameExists = allResults.some(
     (entry) => entry.name.trim().toLowerCase() === name.trim().toLowerCase()
   );
@@ -161,35 +163,30 @@ export default function TestcasesPage() {
   const handleOptionChange = (qIdx: number, oIdx: number) => {
     setAnswers((prev) => {
       const prevArr = prev[qIdx] || [];
-      if (prevArr.includes(oIdx)) {
-        return { ...prev, [qIdx]: prevArr.filter((i) => i !== oIdx) };
-      } else {
-        return { ...prev, [qIdx]: [...prevArr, oIdx] };
-      }
+      return {
+        ...prev,
+        [qIdx]: prevArr.includes(oIdx)
+          ? prevArr.filter((i) => i !== oIdx)
+          : [...prevArr, oIdx],
+      };
     });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      alert("Please enter your name.");
-      return;
-    }
-    if (nameExists) {
-      alert("This name has already submitted responses.");
-      return;
-    }
-    // Calculate score
-    let total = 0;
-    let correct = 0;
+    if (!name.trim()) return alert("Please enter your name.");
+    if (nameExists) return alert("This name has already submitted responses.");
+
+    let total = 0, correct = 0;
     questions.forEach((q, qIdx) => {
       q.options.forEach((opt, oIdx) => {
         total++;
         if (opt.correct && (answers[qIdx] || []).includes(oIdx)) correct++;
-        if (!opt.correct && (answers[qIdx] || []).includes(oIdx)) correct -= 0.5; // Penalty for wrong selection
+        if (!opt.correct && (answers[qIdx] || []).includes(oIdx)) correct -= 0.5;
       });
     });
-    const percent = Math.max(0, Math.round((correct / total) * 100));
+    correct = Math.max(0, correct); // Ensure no negative score
+    const percent = Math.round((correct / total) * 100);
     setScore(percent);
 
     try {
@@ -209,22 +206,16 @@ export default function TestcasesPage() {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/results`);
-      const data = await res.json();
-      setAllResults(data);
-    } catch (err) {
+      setAllResults(await res.json());
+    } catch {
       alert("Failed to fetch results.");
     }
     setLoading(false);
   };
 
-  // Fetch results automatically when entering Host View
   useEffect(() => {
-    if (showHost && hostAuth) {
-      fetchResults();
-    }
-    // Also fetch on mount for duplicate name check
+    if (showHost && hostAuth) fetchResults();
     fetchResults();
-    // eslint-disable-next-line
   }, [showHost, hostAuth]);
 
   const handleHostView = () => {
@@ -242,66 +233,42 @@ export default function TestcasesPage() {
       try {
         await fetch(`${API_URL}/clear`, { method: "POST" });
         fetchResults();
-      } catch (err) {
+      } catch {
         alert("Failed to clear results.");
       }
     }
   };
 
+  const renderOptionFeedback = (qIdx: number, oIdx: number, option: { text: string; correct: boolean }) => {
+    const selected = (answers[qIdx] || []).includes(oIdx);
+    if (submitted) {
+      if (option.correct && selected) return "text-green-700 font-bold";
+      if (option.correct && !selected) return "text-green-600";
+      if (!option.correct && selected) return "text-red-500 line-through";
+    }
+    return "";
+  };
+
   if (showHost && hostAuth) {
     return (
       <div className="max-w-2xl mx-auto p-6">
-        <button
-          className="mb-4 bg-gray-300 px-3 py-1 rounded"
-          onClick={() => {
-            setShowHost(false);
-            setHostAuth(false);
-          }}
-        >
-          Back to Quiz
-        </button>
-        <button
-          className="mb-4 ml-2 bg-blue-600 text-white px-3 py-1 rounded"
-          onClick={fetchResults}
-          disabled={loading}
-        >
-          {loading ? "Refreshing..." : "Refresh Results"}
-        </button>
-        <button
-          className="mb-4 ml-2 bg-red-600 text-white px-3 py-1 rounded"
-          onClick={handleClearResults}
-        >
-          Clear Results
-        </button>
+        <button className="mb-4 bg-gray-300 px-3 py-1 rounded" onClick={() => { setShowHost(false); setHostAuth(false); }}>Back to Quiz</button>
+        <button className="mb-4 ml-2 bg-blue-600 text-white px-3 py-1 rounded" onClick={fetchResults} disabled={loading}>{loading ? "Refreshing..." : "Refresh Results"}</button>
+        <button className="mb-4 ml-2 bg-red-600 text-white px-3 py-1 rounded" onClick={handleClearResults}>Clear Results</button>
         <h2 className="text-xl font-bold mb-2">All Submissions</h2>
         <table className="w-full border mb-4">
-          <thead>
-            <tr>
-              <th className="border px-2">Name</th>
-              <th className="border px-2">Score (%)</th>
-            </tr>
-          </thead>
+          <thead><tr><th className="border px-2">Name</th><th className="border px-2">Score (%)</th></tr></thead>
           <tbody>
-            {allResults
-              .sort((a, b) => b.percent - a.percent)
-              .map((s, i) => (
-                <tr key={i}>
-                  <td className="border px-2">{s.name}</td>
-                  <td className="border px-2 font-bold">{s.percent}</td>
-                </tr>
-              ))}
+            {allResults.sort((a, b) => b.percent - a.percent).map((s, i) => (
+              <tr key={i}><td className="border px-2">{s.name}</td><td className="border px-2 font-bold">{s.percent}</td></tr>
+            ))}
           </tbody>
         </table>
         <h3 className="text-lg font-semibold mb-1">🏆 Top 3 Winners</h3>
         <ol className="list-decimal ml-6">
-          {allResults
-            .sort((a, b) => b.percent - a.percent)
-            .slice(0, 3)
-            .map((s, i) => (
-              <li key={i} className="font-bold">
-                {s.name} ({s.percent}%)
-              </li>
-            ))}
+          {allResults.sort((a, b) => b.percent - a.percent).slice(0, 3).map((s, i) => (
+            <li key={i} className="font-bold">{s.name} ({s.percent}%)</li>
+          ))}
         </ol>
       </div>
     );
@@ -311,13 +278,9 @@ export default function TestcasesPage() {
     <div className="max-w-2xl mx-auto p-6">
       <div className="flex justify-between mb-4">
         <h1 className="text-2xl font-bold">Login Page Test Case MCQs</h1>
-        <button
-          className="bg-green-600 text-white px-3 py-1 rounded"
-          onClick={handleHostView}
-        >
-          Host View
-        </button>
+        <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={handleHostView}>Host View</button>
       </div>
+
       {!submitted ? (
         <form onSubmit={handleSubmit}>
           <input
@@ -325,49 +288,48 @@ export default function TestcasesPage() {
             placeholder="Enter your name"
             className="w-full border rounded px-2 py-1 mb-4"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             required
             disabled={submitted}
           />
-          {nameExists && (
-            <div className="text-red-600 mb-2">
-              This name has already submitted responses.
-            </div>
-          )}
+          {nameExists && <div className="text-red-600 mb-2">This name has already submitted responses.</div>}
+
           {questions.map((q, qIdx) => (
             <div key={qIdx} className="mb-4">
               <h3 className="font-semibold">{qIdx + 1}. {q.question}</h3>
               {q.options.map((opt, oIdx) => (
-                <label key={oIdx} className="block">
+                <label key={oIdx} className={`block ${renderOptionFeedback(qIdx, oIdx, opt)}`}>
                   <input
                     type="checkbox"
                     checked={(answers[qIdx] || []).includes(oIdx)}
                     onChange={() => handleOptionChange(qIdx, oIdx)}
                     disabled={submitted}
-                  />{" "}
-                  {opt.text}
+                  /> {opt.text}
                 </label>
               ))}
             </div>
           ))}
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded mt-2"
-            disabled={nameExists}
-          >
-            Submit
-          </button>
+
+          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded mt-2" disabled={nameExists}>Submit</button>
         </form>
       ) : (
         <div className="mt-6">
           <h2 className="text-xl font-semibold mb-2">Your Score</h2>
           <p className="text-lg font-bold">{score}%</p>
-          <button
-            className="mt-4 bg-gray-300 px-3 py-1 rounded"
-            onClick={() => window.location.reload()}
-          >
-            Submit Another
-          </button>
+          <button className="mt-4 bg-gray-300 px-3 py-1 rounded" onClick={() => window.location.reload()}>Submit Another</button>
+        </div>
+      )}
+
+      {/* Legend Section */}
+      {submitted && (
+        <div className="mt-6 text-sm border-t pt-4">
+          <h4 className="font-semibold mb-2">Legend:</h4>
+          <ul className="list-disc ml-6">
+            <li><span className="text-green-700 font-bold">Green Bold</span>: Correct and selected ✅</li>
+            <li><span className="text-green-600">Green</span>: Correct but not selected ⚠️</li>
+            <li><span className="text-red-500 line-through">Red Strikethrough</span>: Selected but incorrect ❌</li>
+            <li><span>White</span>: Not selected and not correct ⬜</li>
+          </ul>
         </div>
       )}
     </div>
